@@ -16,6 +16,7 @@ const guidelinesPage = document.getElementById('guidelines');
 const roleSelectPage = document.getElementById('roleSelect');
 const formTitle = document.getElementById('formTitle');
 const testForm = document.getElementById('testForm');
+const messageDiv = document.getElementById('message');
 
 // ========================
 // INIT
@@ -24,12 +25,15 @@ const urlParams = new URLSearchParams(window.location.search);
 code = urlParams.get('code');
 
 if (code) {
+  // Male accessing link or female revisiting PDF
   loadSession(code).then(() => {
     if (sessionData.submittedMale) {
+      // Male has already completed → female can download
       role = 'female';
       showDownloadButton();
       showMessage('Male has completed the test. You can download the results.');
     } else {
+      // Male accesses the link to complete test
       role = 'male';
       startFormForMale();
     }
@@ -49,9 +53,7 @@ startBtn.addEventListener('click', () => {
 femaleBtn.addEventListener('click', () => startTest('female'));
 maleBtn.addEventListener('click', () => startTest('male'));
 
-// Submit handled by form submit event
 testForm.addEventListener('submit', handleSubmit);
-
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
 
@@ -88,14 +90,12 @@ function populateForm() {
     div.innerHTML = `<p>${q.text}</p>`;
 
     if (q.options) {
-      // Use checkbox for multiple answers (q6, q9) otherwise radio
       const type = (q.id==='q6'||q.id==='q9') ? 'checkbox' : 'radio';
       q.options.forEach(opt => {
         const inputId = `${q.id}_${opt}`;
         div.innerHTML += `<label for="${inputId}"><input id="${inputId}" type="${type}" name="${q.id}" value="${opt}"> ${opt}</label><br>`;
       });
     } else if (q.mapping) {
-      // Match-the-following: render as dropdowns
       Object.keys(q.mapping).forEach(k => {
         const label = document.createElement('label');
         label.innerText = k + ': ';
@@ -114,21 +114,6 @@ function populateForm() {
     }
 
     testForm.appendChild(div);
-  });
-
-  // Only add download answers button, submit comes from HTML
-  const actionsDiv = document.createElement('div');
-  actionsDiv.classList.add('actions');
-  actionsDiv.innerHTML = `<button type="button" id="downloadLocal">Download Answers (JSON)</button>`;
-  testForm.appendChild(actionsDiv);
-
-  document.getElementById('downloadLocal').addEventListener('click', () => {
-    const answers = collectAnswers();
-    const blob = new Blob([JSON.stringify(answers, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'answers.json'; a.click();
-    URL.revokeObjectURL(url);
   });
 }
 
@@ -158,6 +143,7 @@ async function handleSubmit(e) {
 
   try {
     if(role==='female' && !code) {
+      // Female submits → get code
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
@@ -168,14 +154,16 @@ async function handleSubmit(e) {
       code = data.code;
       sessionData = data;
       sessionData.submittedFemale = true;
-      alert(`Share this link with male: ${window.location.origin}/?code=${code}`);
-      showMessage('Waiting for male to complete the test...');
+
+      // Show link for sharing
       formPage.classList.add('hidden');
+      showMessage(`Share this link with male: ${window.location.origin}/?code=${code}`);
     } else if(role==='male') {
       if(sessionData.submittedMale){
         alert('This link has already been used.');
         return;
       }
+      // Male submits → complete test
       const res = await fetch(`/api/session/${code}/complete`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -187,6 +175,7 @@ async function handleSubmit(e) {
       sessionData.submittedMale = true;
       alert('Test completed! PDF download available.');
       showDownloadButton();
+      formPage.classList.add('hidden');
     }
   } catch(err) {
     alert("Submission failed: " + err.message);
@@ -214,7 +203,6 @@ async function loadSession(sessionCode) {
 }
 
 function startFormForMale() {
-  roleSelectPage.classList.add('hidden');
   formPage.classList.remove('hidden');
   formTitle.innerText = 'Answer Questions (Male)';
   populateForm();
@@ -252,13 +240,10 @@ async function downloadPDF() {
 
 // Show messages
 function showMessage(msg) {
-  let msgDiv = document.getElementById('message');
-  if(!msgDiv){
-    msgDiv = document.createElement('div');
-    msgDiv.id = 'message';
-    msgDiv.classList.add('note');
-    formPage.prepend(msgDiv);
+  if(messageDiv){
+    messageDiv.innerText = msg;
+    messageDiv.classList.remove('hidden');
+  } else {
+    alert(msg);
   }
-  msgDiv.innerText = msg;
-  msgDiv.classList.remove('hidden');
 }
