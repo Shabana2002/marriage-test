@@ -35,25 +35,15 @@ if (code) {
 
 // ---- Event Listeners ---- //
 startBtn.addEventListener('click', () => {
-  console.log("Take Test clicked");
   guidelinesPage.classList.add('hidden');
   roleSelectPage.classList.remove('hidden');
 });
 
-femaleBtn.addEventListener('click', () => {
-  console.log("Female button clicked");
-  startTest('female');
-});
-
-maleBtn.addEventListener('click', () => {
-  console.log("Male button clicked");
-  startTest('male');
-});
-
+femaleBtn.addEventListener('click', () => startTest('female'));
+maleBtn.addEventListener('click', () => startTest('male'));
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
 
-// ---- Warn before leaving ---- //
 window.addEventListener('beforeunload', (e) => {
   e.preventDefault();
   e.returnValue = 'Are you sure you want to leave? Your progress will be lost.';
@@ -87,27 +77,26 @@ function populateQuestions() {
 
   const questionsA = window.QUESTIONS.sectionA;
   const questionsB = window.QUESTIONS.sectionB;
-
   const all = role === 'female' ? questionsA : questionsA.concat(questionsB);
 
-  all.forEach((q) => {
+  all.forEach(q => {
     const div = document.createElement('div');
     div.className = 'question';
     div.innerHTML = `<p>${q.text}</p>`;
 
     if (q.options) {
       const inputType = q.multiple ? 'checkbox' : 'radio';
-      q.options.forEach((opt) => {
+      q.options.forEach(opt => {
         div.innerHTML += `<label><input type="${inputType}" name="${q.id}" value="${opt}"> ${opt}</label>`;
       });
     } else if (q.mapping) {
-      Object.keys(q.mapping).forEach((term) => {
+      Object.keys(q.mapping).forEach(term => {
         const label = document.createElement('label');
         label.textContent = term + ': ';
         const select = document.createElement('select');
         select.name = `${q.id}_${term}`;
         const dropdownItems = ["Periods", "Cramps", "Ovulation", "Hymen", "Vagina"];
-        dropdownItems.forEach((desc) => {
+        dropdownItems.forEach(desc => {
           const opt = document.createElement('option');
           opt.value = desc;
           opt.textContent = desc;
@@ -122,7 +111,6 @@ function populateQuestions() {
     testForm.appendChild(div);
   });
 
-  // Add Submit & Download buttons
   const actions = document.createElement('div');
   actions.className = 'actions';
   actions.innerHTML = `
@@ -153,9 +141,8 @@ async function handleSubmit() {
       code = data.code;
       sessionData = data;
 
-      // Show shareable link below submit button
       const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true; // disable to prevent multiple submissions
+      submitBtn.disabled = true;
 
       let linkDiv = document.getElementById('shareLinkDiv');
       if (!linkDiv) {
@@ -170,7 +157,6 @@ async function handleSubmit() {
         <input type="text" value="${shareURL}" readonly style="width: 100%;"/>
         <button id="copyLinkBtn">Copy Link</button>
       `;
-
       document.getElementById('copyLinkBtn').addEventListener('click', () => {
         const input = linkDiv.querySelector('input');
         input.select();
@@ -198,7 +184,7 @@ async function handleSubmit() {
 // ---- Collect Answers ---- //
 function collectAnswers() {
   const out = {};
-  testForm.querySelectorAll('input, select').forEach((el) => {
+  testForm.querySelectorAll('input, select').forEach(el => {
     if (el.type === 'radio' && el.checked) out[el.name] = el.value;
     else if (el.type === 'checkbox') {
       if (!out[el.name]) out[el.name] = [];
@@ -215,6 +201,17 @@ function showDownloadButton() {
   downloadBtn.classList.remove('hidden');
 }
 
+// ---- Compare Answers ---- //
+function compareAnswers(femaleAnswer, maleAnswer) {
+  if (Array.isArray(femaleAnswer) && Array.isArray(maleAnswer)) {
+    const matches = femaleAnswer.filter(ans => maleAnswer.includes(ans));
+    const total = Math.max(femaleAnswer.length, maleAnswer.length) || 1;
+    return Math.round((matches.length / total) * 100);
+  } else {
+    return femaleAnswer === maleAnswer ? 100 : 0;
+  }
+}
+
 // ---- Download PDF ---- //
 async function downloadPDF() {
   if (!sessionData.femaleAnswers || !sessionData.maleAnswers)
@@ -229,13 +226,17 @@ async function downloadPDF() {
   doc.text('Section A — Compatibility', 10, y);
   y += 10;
 
-  window.QUESTIONS.sectionA.forEach((q) => {
-    const f = sessionData.femaleAnswers[q.id] || '-';
-    const m = sessionData.maleAnswers[q.id] || '-';
+  window.QUESTIONS.sectionA.forEach(q => {
+    const f = sessionData.femaleAnswers[q.id] || (q.multiple ? [] : '-');
+    const m = sessionData.maleAnswers[q.id] || (q.multiple ? [] : '-');
+    const score = compareAnswers(f, m);
+
     doc.text(q.text, 10, y);
     y += 6;
-    doc.text('F: ' + f, 10, y);
-    doc.text('M: ' + m, 100, y);
+    doc.text('F: ' + (Array.isArray(f) ? f.join(', ') : f), 10, y);
+    doc.text('M: ' + (Array.isArray(m) ? m.join(', ') : m), 100, y);
+    y += 6;
+    doc.text(`Compatibility: ${score}%`, 10, y);
     y += 8;
   });
 
