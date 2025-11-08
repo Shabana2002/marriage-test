@@ -87,7 +87,7 @@ function populateQuestions() {
     if (q.options) {
       const inputType = q.multiple ? 'checkbox' : 'radio';
       q.options.forEach(opt => {
-        div.innerHTML += `<label><input type="${inputType}" name="${q.id}" value="${opt}"> ${opt}</label>`;
+        div.innerHTML += `<label><input type="${inputType}" name="${q.id}${q.multiple ? '[]' : ''}" value="${opt}"> ${opt}</label>`;
       });
     } else if (q.mapping) {
       Object.keys(q.mapping).forEach(term => {
@@ -185,12 +185,13 @@ async function handleSubmit() {
 function collectAnswers() {
   const out = {};
   testForm.querySelectorAll('input, select').forEach(el => {
-    if (el.type === 'radio' && el.checked) out[el.name] = el.value;
+    const name = el.name.replace(/\[\]$/, ''); // remove [] for checkbox arrays
+    if (el.type === 'radio' && el.checked) out[name] = el.value;
     else if (el.type === 'checkbox') {
-      if (!out[el.name]) out[el.name] = [];
-      if (el.checked) out[el.name].push(el.value);
+      if (!out[name]) out[name] = [];
+      if (el.checked) out[name].push(el.value);
     } else if (el.tagName.toLowerCase() === 'select') {
-      out[el.name] = el.value;
+      out[name] = el.value;
     }
   });
   return out;
