@@ -18,6 +18,7 @@ code = urlParams.get('code');
 
 console.log("✅ script.js loaded");
 
+// ---- Check session if code exists ---- //
 if (code) {
   loadSession(code).then(() => {
     if (sessionData.submittedMale) {
@@ -34,12 +35,20 @@ if (code) {
 
 // ---- Event Listeners ---- //
 startBtn.addEventListener('click', () => {
+  console.log("Take Test clicked");
   guidelinesPage.classList.add('hidden');
   roleSelectPage.classList.remove('hidden');
 });
 
-femaleBtn.addEventListener('click', () => startTest('female'));
-maleBtn.addEventListener('click', () => startTest('male'));
+femaleBtn.addEventListener('click', () => {
+  console.log("Female button clicked");
+  startTest('female');
+});
+
+maleBtn.addEventListener('click', () => {
+  console.log("Male button clicked");
+  startTest('male');
+});
 
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
@@ -78,6 +87,7 @@ function populateQuestions() {
 
   const questionsA = window.QUESTIONS.sectionA;
   const questionsB = window.QUESTIONS.sectionB;
+
   const all = role === 'female' ? questionsA : questionsA.concat(questionsB);
 
   all.forEach((q) => {
@@ -86,17 +96,9 @@ function populateQuestions() {
     div.innerHTML = `<p>${q.text}</p>`;
 
     if (q.options) {
-      // Determine input type
-      const inputType =
-        q.multiple || q.text.toLowerCase().includes('multi-select') ? 'checkbox' : 'radio';
-
+      const inputType = q.multiple ? 'checkbox' : 'radio';
       q.options.forEach((opt) => {
-        const inputId = `${q.id}_${opt}`;
-        div.innerHTML += `
-          <label for="${inputId}">
-            <input id="${inputId}" type="${inputType}" name="${q.id}" value="${opt}"> ${opt}
-          </label><br>
-        `;
+        div.innerHTML += `<label><input type="${inputType}" name="${q.id}" value="${opt}"> ${opt}</label>`;
       });
     } else if (q.mapping) {
       Object.keys(q.mapping).forEach((term) => {
@@ -104,7 +106,6 @@ function populateQuestions() {
         label.textContent = term + ': ';
         const select = document.createElement('select');
         select.name = `${q.id}_${term}`;
-
         const dropdownItems = ["Periods", "Cramps", "Ovulation", "Hymen", "Vagina"];
         dropdownItems.forEach((desc) => {
           const opt = document.createElement('option');
@@ -112,7 +113,6 @@ function populateQuestions() {
           opt.textContent = desc;
           select.appendChild(opt);
         });
-
         label.appendChild(select);
         div.appendChild(label);
         div.appendChild(document.createElement('br'));
@@ -152,10 +152,33 @@ async function handleSubmit() {
       const data = await res.json();
       code = data.code;
       sessionData = data;
-      alert(
-        'Female test submitted! Share this link with your partner:\n' +
-          `${window.location.origin}/?code=${code}`
-      );
+
+      // Show shareable link below submit button
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true; // disable to prevent multiple submissions
+
+      let linkDiv = document.getElementById('shareLinkDiv');
+      if (!linkDiv) {
+        linkDiv = document.createElement('div');
+        linkDiv.id = 'shareLinkDiv';
+        linkDiv.style.marginTop = '10px';
+        submitBtn.parentNode.appendChild(linkDiv);
+      }
+      const shareURL = `${window.location.origin}/?code=${code}`;
+      linkDiv.innerHTML = `
+        <p>Female test submitted! Share this link with your partner:</p>
+        <input type="text" value="${shareURL}" readonly style="width: 100%;"/>
+        <button id="copyLinkBtn">Copy Link</button>
+      `;
+
+      document.getElementById('copyLinkBtn').addEventListener('click', () => {
+        const input = linkDiv.querySelector('input');
+        input.select();
+        input.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        alert('Link copied to clipboard!');
+      });
+
     } else if (role === 'male') {
       const res = await fetch(`/api/session/${code}/complete`, {
         method: 'POST',
@@ -211,8 +234,8 @@ async function downloadPDF() {
     const m = sessionData.maleAnswers[q.id] || '-';
     doc.text(q.text, 10, y);
     y += 6;
-    doc.text('F: ' + (Array.isArray(f) ? f.join(', ') : f), 10, y);
-    doc.text('M: ' + (Array.isArray(m) ? m.join(', ') : m), 100, y);
+    doc.text('F: ' + f, 10, y);
+    doc.text('M: ' + m, 100, y);
     y += 8;
   });
 
