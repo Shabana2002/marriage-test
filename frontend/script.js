@@ -142,7 +142,21 @@ async function handleSubmit() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ femaleAnswers: answers }),
       });
-      const data = await res.json();
+
+      // Safe JSON parsing
+      let data;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        console.error('Invalid JSON response from server:', err);
+        data = {};
+      }
+
+      if (!data.code) {
+        return alert('Submission failed: no session code returned from server.');
+      }
+
       code = data.code;
       sessionData = data;
 
@@ -171,12 +185,24 @@ async function handleSubmit() {
       });
 
     } else if (role === 'male') {
+      if (!code) return alert('No session code found. Female must submit first.');
+
       const res = await fetch(`/api/session/${code}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maleAnswers: answers }),
       });
-      const data = await res.json();
+
+      // Safe JSON parsing
+      let data;
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        console.error('Invalid JSON response from server:', err);
+        data = {};
+      }
+
       sessionData = data;
       alert('Male test submitted! Now you can download the PDF.');
       showDownloadButton();
@@ -185,6 +211,7 @@ async function handleSubmit() {
     alert('Submission failed: ' + err.message);
   }
 }
+
 
 // ---- Collect Answers ---- //
 function collectAnswers() {
