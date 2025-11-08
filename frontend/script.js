@@ -15,3 +15,19 @@ window.QUESTIONS = {
     // add 4 more questions here
   ]
 };
+// ========================
+// Warn user before leaving (only if test not completed)
+// ========================
+window.addEventListener('beforeunload', (e) => {
+  // Only show the warning if user started but hasn’t completed
+  const hasStarted = !!role;
+  const completed =
+    (role === 'female' && sessionData.submittedFemale) ||
+    (role === 'male' && sessionData.submittedMale);
+
+  if (hasStarted && !completed) {
+    e.preventDefault();
+    e.returnValue = ''; // Required for Chrome to show the popup
+    return ''; // Some browsers need this return value
+  }
+});
