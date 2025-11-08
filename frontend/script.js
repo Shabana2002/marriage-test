@@ -85,9 +85,14 @@ function populateQuestions() {
     div.innerHTML = `<p>${q.text}</p>`;
 
     if (q.options) {
-      const inputType = q.multiple ? 'checkbox' : 'radio';
+      // Only q6 and q9 are multi-select
+      const multiSelectIds = ['q6', 'q9'];
+      const inputType = multiSelectIds.includes(q.id) ? 'checkbox' : 'radio';
+
       q.options.forEach(opt => {
-        div.innerHTML += `<label><input type="${inputType}" name="${q.id}${q.multiple ? '[]' : ''}" value="${opt}"> ${opt}</label>`;
+        div.innerHTML += `<label>
+          <input type="${inputType}" name="${q.id}${inputType==='checkbox' ? '[]' : ''}" value="${opt}"> ${opt}
+        </label><br>`;
       });
     } else if (q.mapping) {
       Object.keys(q.mapping).forEach(term => {
@@ -228,8 +233,8 @@ async function downloadPDF() {
   y += 10;
 
   window.QUESTIONS.sectionA.forEach(q => {
-    const f = sessionData.femaleAnswers[q.id] || (q.multiple ? [] : '-');
-    const m = sessionData.maleAnswers[q.id] || (q.multiple ? [] : '-');
+    const f = sessionData.femaleAnswers[q.id] || (['q6','q9'].includes(q.id) ? [] : '-');
+    const m = sessionData.maleAnswers[q.id] || (['q6','q9'].includes(q.id) ? [] : '-');
     const score = compareAnswers(f, m);
 
     doc.text(q.text, 10, y);
