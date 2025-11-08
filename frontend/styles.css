@@ -12,6 +12,14 @@ body, html {
   display: none;
 }
 
+.guidelines-list {
+  list-style-type: disc;
+  color: black;
+  text-align: left;
+  padding-left: 40px;
+}
+
+
 /* Guidelines Page */
 #guidelines {
   height: 100vh;
@@ -22,7 +30,7 @@ body, html {
   background: url('./images/img1.jpg') no-repeat center center;
   background-size: cover;
   text-align: center;
-  color: #fff;
+  color: black;
   padding: 40px;
 }
 
