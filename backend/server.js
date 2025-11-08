@@ -1,1 +1,64 @@
-const express = require('express'); const fs = require('fs'); const path = require('path'); const bodyParser = require('body-parser'); const app = express(); app.use(bodyParser.json()); const SESS = path.join(__dirname, 'sessions.json'); function readS(){ if(!fs.existsSync(SESS)) return {}; try { return JSON.parse(fs.readFileSync(SESS)); } catch(e){ return {}; } } function writeS(s){ fs.writeFileSync(SESS, JSON.stringify(s, null, 2)); } app.post('/api/session', (req, res) => { const s = readS(); const code = req.body.code || ('MM'+Math.random().toString(36).slice(2,8).toUpperCase()); s[code] = { createdAt: Date.now(), femaleAnswers: req.body.femaleAnswers || null, maleAnswers: req.body.maleAnswers || null, disqualified: false }; writeS(s); res.json({ ok:true, code }); }); app.get('/api/session/:code', (req, res) => { const s = readS(); res.json(s[req.params.code] || null); }); app.post('/api/session/:code/complete', (req, res) => { const s = readS(); const code = req.params.code; if(!s[code]) return res.status(404).json({ error:'not found' }); s[code].maleAnswers = req.body.maleAnswers; s[code].completedAt = Date.now(); writeS(s); res.json({ ok:true }); }); app.post('/api/session/:code/disqualify', (req,res)=>{ const s = readS(); const code = req.params.code; if(!s[code]) return res.status(404).json({error:'not found'}); s[code].disqualified = true; writeS(s); res.json({ok:true}); }); const PORT = process.env.PORT || 3000; app.listen(PORT, ()=>console.log('Server listening on', PORT));
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+const SESS = path.join(__dirname, 'sessions.json');
+
+function readS() {
+  if (!fs.existsSync(SESS)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(SESS));
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeS(s) {
+  fs.writeFileSync(SESS, JSON.stringify(s, null, 2));
+}
+
+// Create session (female)
+app.post('/api/session', (req, res) => {
+  const { femaleAnswers } = req.body;
+  if (!femaleAnswers) return res.status(400).json({ error: 'No answers provided' });
+
+  const code = 'MM' + Math.floor(1000 + Math.random() * 9000); // MMxxxx
+  const sessions = readS();
+  sessions[code] = {
+    femaleAnswers,
+    createdAt: Date.now(),
+    completedAt: null,
+    maleAnswers: null
+  };
+  writeS(sessions);
+  res.json({ code });
+});
+
+// Get session (male)
+app.get('/api/session/:code', (req, res) => {
+  const code = req.params.code;
+  const sessions = readS();
+  if (!sessions[code]) return res.status(404).json({ error: 'Session not found' });
+  res.json(sessions[code]);
+});
+
+// Complete session (male submits)
+app.post('/api/session/:code/complete', (req, res) => {
+  const code = req.params.code;
+  const { maleAnswers } = req.body;
+  const sessions = readS();
+  if (!sessions[code]) return res.status(404).json({ error: 'Session not found' });
+
+  sessions[code].maleAnswers = maleAnswers;
+  sessions[code].completedAt = Date.now();
+  writeS(sessions);
+  res.json({ success: true });
+});
+
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

@@ -1,1 +1,29 @@
-const fs = require('fs'); const path = require('path'); const SESS = path.join(__dirname, 'sessions.json'); const DELETE_AFTER_DAYS = process.env.DELETE_AFTER_DAYS ? parseInt(process.env.DELETE_AFTER_DAYS) : 30; const MS = DELETE_AFTER_DAYS * 24 * 60 * 60 * 1000; function readS(){ if(!fs.existsSync(SESS)) return {}; try{ return JSON.parse(fs.readFileSync(SESS)); } catch(e){ return {}; } } function writeS(s){ fs.writeFileSync(SESS, JSON.stringify(s, null, 2)); } function cleanup(){ const s = readS(); const cutoff = Date.now() - MS; Object.keys(s).forEach(k=>{ const t = s[k].completedAt || s[k].createdAt || 0; if(t < cutoff) delete s[k]; }); writeS(s); } cleanup(); console.log('Cleanup complete');
+const fs = require('fs');
+const path = require('path');
+
+const SESS = path.join(__dirname, 'sessions.json');
+const DELETE_AFTER_DAYS = process.env.DELETE_AFTER_DAYS ? parseInt(process.env.DELETE_AFTER_DAYS) : 30;
+const MS = DELETE_AFTER_DAYS * 24 * 60 * 60 * 1000;
+
+function readS() {
+  if (!fs.existsSync(SESS)) return {};
+  try { return JSON.parse(fs.readFileSync(SESS)); }
+  catch (e) { return {}; }
+}
+
+function writeS(s) {
+  fs.writeFileSync(SESS, JSON.stringify(s, null, 2));
+}
+
+function cleanup() {
+  const s = readS();
+  const cutoff = Date.now() - MS;
+  Object.keys(s).forEach(k => {
+    const t = s[k].completedAt || s[k].createdAt || 0;
+    if (t < cutoff) delete s[k];
+  });
+  writeS(s);
+}
+
+cleanup();
+console.log('Cleanup complete');

@@ -1,4 +1,3 @@
-
 window.QUESTIONS = {
   sectionA: [
     { id: "q1", text: "Why do you want to get married?", options: ["A: I want to be settled and start a family.","B: I love my partner and want a long-term commitment.","C: My parents / family encouraged or pressured me.","D: I’m not sure / other reasons."] },

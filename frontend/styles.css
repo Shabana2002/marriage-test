@@ -1,11 +1,201 @@
+/* Reset some default styles */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  color: #333;
+}
 
-body{font-family:system-ui, -apple-system, Roboto, Arial, sans-serif; background:#f6f7fb; color:#222; padding:20px;}
-.card{max-width:900px;margin:20px auto;padding:22px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
-.hidden{display:none}
-.field{margin:12px 0}
-.multiselect label{display:inline-block;margin-right:10px}
-.actions{margin-top:18px}
-.note{color:#666;margin-top:10px}
-.resultTable{width:100%;border-collapse:collapse;margin-top:12px}
-.resultTable th,.resultTable td{border:1px solid #eee;padding:8px;text-align:left}
-.summaryCard{margin-top:12px;padding:12px;border:1px solid #eee;border-radius:6px;background:#fafafa}
+/* Hide sections by default */
+.hidden {
+  display: none;
+}
+
+/* Guidelines Page */
+#guidelines {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: url('images/img1.jpg') no-repeat center center;
+  background-size: cover;
+  text-align: center;
+  color: #fff;
+  padding: 20px;
+}
+
+#guidelines h1 {
+  font-size: 3em;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 5px #000;
+}
+
+#guidelines p {
+  font-size: 1.2em;
+  margin-bottom: 30px;
+  text-shadow: 1px 1px 3px #000;
+}
+
+#guidelines button {
+  padding: 12px 30px;
+  font-size: 1.2em;
+  cursor: pointer;
+  border: none;
+  background-color: #ff6b81;
+  color: white;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+
+#guidelines button:hover {
+  background-color: #ff3b5c;
+}
+
+/* Role Selection */
+#roleSelect {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: url('images/img2.jpg') no-repeat center center;
+  background-size: cover;
+  text-align: center;
+  color: #fff;
+}
+
+#roleSelect h2 {
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 5px #000;
+}
+
+#roleSelect button {
+  padding: 10px 25px;
+  font-size: 1.1em;
+  margin: 10px;
+  border: none;
+  background-color: #1e90ff;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+#roleSelect button:hover {
+  background-color: #0066cc;
+}
+
+#roleSelect input {
+  margin-top: 20px;
+  padding: 8px;
+  font-size: 1em;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* Form Page */
+#formPage {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+
+#formPage .question {
+  margin-bottom: 20px;
+}
+
+#formPage .question p {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+#formPage label {
+  display: block;
+  margin-bottom: 5px;
+  cursor: pointer;
+}
+
+#formPage input[type="radio"],
+#formPage input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+#formPage button {
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+#formPage button:hover {
+  background-color: #218838;
+}
+
+/* Result Page */
+#resultPage {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+
+#resultPage table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+#resultPage th, #resultPage td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+#resultPage th {
+  background-color: #f2f2f2;
+}
+
+#resultPage tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+#resultPage .summaryCard {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+  margin-bottom: 20px;
+}
+
+#resultPage button#downloadPDF {
+  padding: 12px 25px;
+  font-size: 1em;
+  border: none;
+  background-color: #ffc107;
+  color: #333;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#resultPage button#downloadPDF:hover {
+  background-color: #e0a800;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  #guidelines h1 { font-size: 2em; }
+  #roleSelect h2 { font-size: 2em; }
+  #formPage, #resultPage { margin: 20px; padding: 15px; }
+}
