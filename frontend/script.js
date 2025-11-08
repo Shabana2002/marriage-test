@@ -34,20 +34,12 @@ if (code) {
 
 // ---- Event Listeners ---- //
 startBtn.addEventListener('click', () => {
-  console.log("Take Test clicked");
   guidelinesPage.classList.add('hidden');
   roleSelectPage.classList.remove('hidden');
 });
 
-femaleBtn.addEventListener('click', () => {
-  console.log("Female button clicked");
-  startTest('female');
-});
-
-maleBtn.addEventListener('click', () => {
-  console.log("Male button clicked");
-  startTest('male');
-});
+femaleBtn.addEventListener('click', () => startTest('female'));
+maleBtn.addEventListener('click', () => startTest('male'));
 
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
@@ -86,8 +78,6 @@ function populateQuestions() {
 
   const questionsA = window.QUESTIONS.sectionA;
   const questionsB = window.QUESTIONS.sectionB;
-
-  // Female → only A; Male → A + B
   const all = role === 'female' ? questionsA : questionsA.concat(questionsB);
 
   all.forEach((q) => {
@@ -96,20 +86,25 @@ function populateQuestions() {
     div.innerHTML = `<p>${q.text}</p>`;
 
     if (q.options) {
-      // Normal MCQs
-      const inputType = q.multiple ? 'checkbox' : 'radio';
+      // Determine input type
+      const inputType =
+        q.multiple || q.text.toLowerCase().includes('multi-select') ? 'checkbox' : 'radio';
+
       q.options.forEach((opt) => {
-        div.innerHTML += `<label><input type="${inputType}" name="${q.id}" value="${opt}"> ${opt}</label>`;
+        const inputId = `${q.id}_${opt}`;
+        div.innerHTML += `
+          <label for="${inputId}">
+            <input id="${inputId}" type="${inputType}" name="${q.id}" value="${opt}"> ${opt}
+          </label><br>
+        `;
       });
     } else if (q.mapping) {
-      // Match-the-following
       Object.keys(q.mapping).forEach((term) => {
         const label = document.createElement('label');
         label.textContent = term + ': ';
         const select = document.createElement('select');
         select.name = `${q.id}_${term}`;
 
-        // Add dropdown options (Periods, Cramps, Ovulation, Hymen, Vagina)
         const dropdownItems = ["Periods", "Cramps", "Ovulation", "Hymen", "Vagina"];
         dropdownItems.forEach((desc) => {
           const opt = document.createElement('option');
@@ -136,7 +131,6 @@ function populateQuestions() {
   `;
   testForm.appendChild(actions);
 
-  // Attach event handlers
   document.getElementById('submitBtn').addEventListener('click', handleSubmit);
   document.getElementById('downloadLocal').addEventListener('click', () => {
     if (!sessionData.submittedFemale || !sessionData.submittedMale)
@@ -217,8 +211,8 @@ async function downloadPDF() {
     const m = sessionData.maleAnswers[q.id] || '-';
     doc.text(q.text, 10, y);
     y += 6;
-    doc.text('F: ' + f, 10, y);
-    doc.text('M: ' + m, 100, y);
+    doc.text('F: ' + (Array.isArray(f) ? f.join(', ') : f), 10, y);
+    doc.text('M: ' + (Array.isArray(m) ? m.join(', ') : m), 100, y);
     y += 8;
   });
 
