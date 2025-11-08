@@ -16,6 +16,7 @@ const guidelinesPage = document.getElementById('guidelines');
 const roleSelectPage = document.getElementById('roleSelect');
 const formTitle = document.getElementById('formTitle');
 const testForm = document.getElementById('testForm');
+const messageDiv = document.getElementById('message');
 
 // ========================
 // INIT
@@ -24,16 +25,17 @@ const urlParams = new URLSearchParams(window.location.search);
 code = urlParams.get('code');
 
 if (code) {
+  // Male accessing link or female revisiting for PDF
   loadSession(code).then(() => {
-    if (sessionData.submittedMale && sessionData.submittedFemale) {
+    if (sessionData.submittedMale) {
+      // Male done → female can download
+      role = 'female';
       showDownloadButton();
-      showMessage('Both users have completed the test. You can download the results.');
-    } else if (!sessionData.submittedMale) {
+      showMessage('Male has completed the test. You can now download the result PDF.');
+    } else {
+      // Male accessing the shared link
       role = 'male';
       startFormForMale();
-    } else if (!sessionData.submittedFemale) {
-      role = 'female';
-      startFormForFemale();
     }
   });
 } else {
@@ -50,9 +52,6 @@ startBtn.addEventListener('click', () => {
 
 femaleBtn.addEventListener('click', () => startTest('female'));
 maleBtn.addEventListener('click', () => startTest('male'));
-
-// Submit handled by form submit event
-testForm.addEventListener('submit', handleSubmit);
 
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
@@ -75,15 +74,16 @@ function startTest(selectedRole) {
   formPage.classList.remove('hidden');
   formTitle.innerText = role === 'female' ? 'Answer Questions (Female)' : 'Answer Questions (Male)';
   populateForm();
-  if(role==='female') femaleBtn.disabled = true;
-  if(role==='male') maleBtn.disabled = true;
 }
 
 // Populate form questions
 function populateForm() {
   testForm.innerHTML = '';
-  let questions = role === 'female' ? window.QUESTIONS.sectionA
-                                   : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
+
+  // Female → Section A only; Male → Section A + B
+  let questions = role === 'female'
+    ? window.QUESTIONS.sectionA
+    : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
 
   questions.forEach(q => {
     const div = document.createElement('div');
@@ -117,27 +117,15 @@ function populateForm() {
     testForm.appendChild(div);
   });
 
-  // Only add download answers button (submit already in HTML)
-  const actionsDiv = document.createElement('div');
-  actionsDiv.classList.add('actions');
-  actionsDiv.innerHTML = `<button type="button" id="downloadLocal">Download Answers (JSON)</button>`;
-  testForm.appendChild(actionsDiv);
+  // Add submit button dynamically
+  const submitBtn = document.createElement('button');
+  submitBtn.type = 'button';
+  submitBtn.id = 'submitBtn';
+  submitBtn.innerText = role === 'female' ? 'Submit Female Test' : 'Submit Male Test';
+  submitBtn.classList.add('btn-primary');
+  testForm.appendChild(submitBtn);
 
-  document.getElementById('downloadLocal').addEventListener('click', () => {
-    if(!sessionData.submittedFemale || !sessionData.submittedMale){
-      alert('Both male and female must submit their answers before downloading.');
-      return;
-    }
-    const answers = {
-      female: sessionData.femaleAnswers,
-      male: sessionData.maleAnswers
-    };
-    const blob = new Blob([JSON.stringify(answers, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'answers.json'; a.click();
-    URL.revokeObjectURL(url);
-  });
+  submitBtn.addEventListener('click', handleSubmit);
 }
 
 // Collect answers
@@ -159,73 +147,50 @@ function collectAnswers() {
   return answers;
 }
 
-// Handle form submission
-async function handleSubmit(e) {
-  e.preventDefault();
+// Handle submission
+async function handleSubmit() {
   const answers = collectAnswers();
 
   try {
-    let res, data;
-
-    if(role==='female') {
-      // Female submission
-      if(!code){
-        res = await fetch('/api/session', {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ femaleAnswers: answers })
-        });
-      } else {
-        res = await fetch(`/api/session/${code}/female`, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ femaleAnswers: answers })
-        });
-      }
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Network error: ${res.status} - ${text}`);
-      }
-
-      try { data = await res.json(); } catch { data = {}; }
-
-      code = data.code || code;
-      sessionData.femaleAnswers = answers;
+    if(role === 'female' && !code) {
+      // Female submits
+      const res = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ femaleAnswers: answers })
+      });
+      if(!res.ok) throw new Error("Network error");
+      const data = await res.json();
+      code = data.code;
+      sessionData = data;
       sessionData.submittedFemale = true;
 
-      alert(`Share this link with male: ${window.location.origin}/?code=${code}`);
-      showMessage('Waiting for male to complete the test...');
+      // Hide form and show share link
       formPage.classList.add('hidden');
+      showShareLink(code);
 
-    } else if(role==='male') {
+    } else if(role === 'male') {
+      // Male submits
       if(sessionData.submittedMale){
         alert('This link has already been used.');
         return;
       }
 
-      res = await fetch(`/api/session/${code}/complete`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
+      const res = await fetch(`/api/session/${code}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maleAnswers: answers })
       });
-
-      if(!res.ok){
-        const text = await res.text();
-        throw new Error(`Network error: ${res.status} - ${text}`);
-      }
-
-      try { data = await res.json(); } catch { data = {}; }
-
-      sessionData.maleAnswers = answers;
+      if(!res.ok) throw new Error("Network error");
+      const data = await res.json();
+      sessionData = data;
       sessionData.submittedMale = true;
 
-      alert('Test completed! You can now download the results.');
-      showDownloadButton();
-      showMessage('Both users can now download the results.');
+      alert('Test completed! You can now download the PDF.');
       formPage.classList.add('hidden');
+      showDownloadButton();
     }
-  } catch(err) {
+  } catch (err) {
     alert("Submission failed: " + err.message);
   }
 }
@@ -234,38 +199,25 @@ async function handleSubmit(e) {
 // Session helpers
 // ========================
 function sessionCompleted() {
-  return sessionData.submittedFemale && sessionData.submittedMale;
+  if (!role) return false;
+  if (role === 'female') return sessionData.submittedFemale && sessionData.submittedMale;
+  if (role === 'male') return sessionData.submittedMale;
+  return false;
 }
 
 async function loadSession(sessionCode) {
   const res = await fetch(`/api/session/${sessionCode}`);
-  if(!res.ok){
-    alert('Failed to load session');
-    location.href = '/';
-    return;
-  }
   const data = await res.json();
   if(!data.femaleAnswers){
     alert('Female has not completed the test yet.');
     location.href = '/';
-    return;
   }
   sessionData = data;
 }
 
 function startFormForMale() {
-  role = 'male';
-  roleSelectPage.classList.add('hidden');
   formPage.classList.remove('hidden');
   formTitle.innerText = 'Answer Questions (Male)';
-  populateForm();
-}
-
-function startFormForFemale() {
-  role = 'female';
-  roleSelectPage.classList.add('hidden');
-  formPage.classList.remove('hidden');
-  formTitle.innerText = 'Answer Questions (Female)';
   populateForm();
 }
 
@@ -274,8 +226,8 @@ function showDownloadButton() {
 }
 
 async function downloadPDF() {
-  if(!sessionCompleted()){
-    alert('Both male and female must submit answers first.');
+  if(!sessionData.submittedMale){
+    alert('PDF is not available until male completes the test.');
     return;
   }
 
@@ -283,32 +235,55 @@ async function downloadPDF() {
   const doc = new jsPDF();
   let y = 10;
 
-  doc.text('Section A — Compatibility', 10, y); y += 10;
+  doc.text('Marriage Compatibility & Awareness Report', 10, y);
+  y += 10;
+  doc.text('Section A — Compatibility', 10, y);
+  y += 10;
+
   window.QUESTIONS.sectionA.forEach(q => {
     const fAns = Array.isArray(sessionData.femaleAnswers[q.id]) ? sessionData.femaleAnswers[q.id].join(', ') : sessionData.femaleAnswers[q.id];
     const mAns = Array.isArray(sessionData.maleAnswers[q.id]) ? sessionData.maleAnswers[q.id].join(', ') : sessionData.maleAnswers[q.id];
     doc.text(`${q.text}`, 10, y); y += 5;
-    doc.text(`Female: ${fAns}`, 10, y);
-    doc.text(`Male: ${mAns}`, 100, y);
+    doc.text(`Female: ${fAns || '-'}`, 10, y);
+    doc.text(`Male: ${mAns || '-'}`, 100, y);
     y += 10;
   });
 
-  doc.text('Section B — Male Only', 10, y); y += 10;
+  y += 10;
+  doc.text('Section B — Male Awareness', 10, y); y += 10;
   const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
-  doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
+  doc.text(`Male Awareness Score: ${maleScore.percent}%`, 10, y);
 
   doc.save('MarriageTestResult.pdf');
 }
 
-// Show messages
+// Show share link for female
+function showShareLink(code) {
+  const container = document.createElement('div');
+  container.classList.add('share-link');
+  const link = `${window.location.origin}/?code=${code}`;
+
+  container.innerHTML = `
+    <p>Share this link with the male participant:</p>
+    <input type="text" id="femaleShareLink" value="${link}" readonly style="width:100%; padding:8px;">
+    <button id="copyLinkBtn" class="btn-secondary">Copy Link</button>
+  `;
+
+  document.body.appendChild(container);
+
+  document.getElementById('copyLinkBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(link).then(() => {
+      alert('Link copied! You can paste it in WhatsApp.');
+    });
+  });
+}
+
+// Show message
 function showMessage(msg) {
-  let msgDiv = document.getElementById('message');
-  if(!msgDiv){
-    msgDiv = document.createElement('div');
-    msgDiv.id = 'message';
-    msgDiv.classList.add('note');
-    formPage.prepend(msgDiv);
+  if (messageDiv) {
+    messageDiv.innerText = msg;
+    messageDiv.classList.remove('hidden');
+  } else {
+    alert(msg);
   }
-  msgDiv.innerText = msg;
-  msgDiv.classList.remove('hidden');
 }
