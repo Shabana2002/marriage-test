@@ -132,6 +132,9 @@ function populateQuestions() {
   });
 }
 
+
+
+
 async function handleSubmit() {
   const answers = collectAnswers();
 
@@ -143,11 +146,11 @@ async function handleSubmit() {
         body: JSON.stringify({ femaleAnswers: answers }),
       });
 
+      const text = await res.text(); // read body once
       let data;
       try {
-        data = await res.json(); // try parse JSON
+        data = JSON.parse(text); // try parse JSON
       } catch {
-        const text = await res.text();
         data = { code: text.trim() }; // fallback to plain text
       }
 
@@ -190,11 +193,11 @@ async function handleSubmit() {
         body: JSON.stringify({ maleAnswers: answers }),
       });
 
+      const text = await res.text(); // read body once
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(text);
       } catch {
-        const text = await res.text();
         data = { maleAnswers: answers }; // fallback minimal data
       }
 
@@ -208,6 +211,8 @@ async function handleSubmit() {
     console.error(err);
   }
 }
+
+
 
 
 // ---- Collect Answers ---- //
