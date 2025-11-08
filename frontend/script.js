@@ -132,7 +132,6 @@ function populateQuestions() {
   });
 }
 
-// ---- Handle Submission ---- //
 async function handleSubmit() {
   const answers = collectAnswers();
 
@@ -144,10 +143,15 @@ async function handleSubmit() {
         body: JSON.stringify({ femaleAnswers: answers }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json(); // try parse JSON
+      } catch {
+        const text = await res.text();
+        data = { code: text.trim() }; // fallback to plain text
+      }
 
       if (!data.code) return alert('Submission failed: no session code returned from server.');
-
       code = data.code;
       sessionData = { ...data, femaleAnswers: answers };
 
@@ -186,7 +190,14 @@ async function handleSubmit() {
         body: JSON.stringify({ maleAnswers: answers }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text();
+        data = { maleAnswers: answers }; // fallback minimal data
+      }
+
       sessionData = { ...sessionData, ...data, maleAnswers: answers };
 
       alert('Male test submitted! Now you can download the PDF.');
@@ -197,6 +208,7 @@ async function handleSubmit() {
     console.error(err);
   }
 }
+
 
 // ---- Collect Answers ---- //
 function collectAnswers() {
