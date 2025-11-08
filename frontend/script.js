@@ -26,12 +26,14 @@ code = urlParams.get('code');
 if (code) {
   loadSession(code).then(() => {
     if (sessionData.submittedMale && sessionData.submittedFemale) {
-      role = 'female';
       showDownloadButton();
-      showMessage('Both male and female have completed the test. You can download the results.');
-    } else {
+      showMessage('Both users have completed the test. You can download the results.');
+    } else if (!sessionData.submittedMale) {
       role = 'male';
       startFormForMale();
+    } else if (!sessionData.submittedFemale) {
+      role = 'female';
+      startFormForFemale();
     }
   });
 } else {
@@ -49,7 +51,9 @@ startBtn.addEventListener('click', () => {
 femaleBtn.addEventListener('click', () => startTest('female'));
 maleBtn.addEventListener('click', () => startTest('male'));
 
+// Submit handled by form submit event
 testForm.addEventListener('submit', handleSubmit);
+
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
 
@@ -78,11 +82,8 @@ function startTest(selectedRole) {
 // Populate form questions
 function populateForm() {
   testForm.innerHTML = '';
-
-  // Female: Section A; Male: Section A + Section B
-  let questions = role === 'female'
-      ? window.QUESTIONS.sectionA
-      : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
+  let questions = role === 'female' ? window.QUESTIONS.sectionA
+                                   : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
 
   questions.forEach(q => {
     const div = document.createElement('div');
@@ -116,16 +117,27 @@ function populateForm() {
     testForm.appendChild(div);
   });
 
-  // Submit + Download buttons
+  // Only add download answers button (submit already in HTML)
   const actionsDiv = document.createElement('div');
   actionsDiv.classList.add('actions');
-  actionsDiv.innerHTML = `
-    <button type="submit">Submit</button>
-    <button type="button" id="downloadLocal">Download PDF</button>
-  `;
+  actionsDiv.innerHTML = `<button type="button" id="downloadLocal">Download Answers (JSON)</button>`;
   testForm.appendChild(actionsDiv);
 
-  document.getElementById('downloadLocal').addEventListener('click', downloadPDF);
+  document.getElementById('downloadLocal').addEventListener('click', () => {
+    if(!sessionData.submittedFemale || !sessionData.submittedMale){
+      alert('Both male and female must submit their answers before downloading.');
+      return;
+    }
+    const answers = {
+      female: sessionData.femaleAnswers,
+      male: sessionData.maleAnswers
+    };
+    const blob = new Blob([JSON.stringify(answers, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'answers.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
 }
 
 // Collect answers
@@ -153,36 +165,65 @@ async function handleSubmit(e) {
   const answers = collectAnswers();
 
   try {
-    if(role==='female' && !code) {
-      const res = await fetch('/api/session', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ femaleAnswers: answers })
-      });
-      if(!res.ok) throw new Error("Network error");
-      const data = await res.json();
-      code = data.code;
-      sessionData = data;
+    let res, data;
+
+    if(role==='female') {
+      // Female submission
+      if(!code){
+        res = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ femaleAnswers: answers })
+        });
+      } else {
+        res = await fetch(`/api/session/${code}/female`, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify({ femaleAnswers: answers })
+        });
+      }
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Network error: ${res.status} - ${text}`);
+      }
+
+      try { data = await res.json(); } catch { data = {}; }
+
+      code = data.code || code;
+      sessionData.femaleAnswers = answers;
       sessionData.submittedFemale = true;
+
       alert(`Share this link with male: ${window.location.origin}/?code=${code}`);
       showMessage('Waiting for male to complete the test...');
       formPage.classList.add('hidden');
+
     } else if(role==='male') {
       if(sessionData.submittedMale){
         alert('This link has already been used.');
         return;
       }
-      const res = await fetch(`/api/session/${code}/complete`, {
+
+      res = await fetch(`/api/session/${code}/complete`, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ maleAnswers: answers })
       });
-      if(!res.ok) throw new Error("Network error");
-      const data = await res.json();
-      sessionData = data;
+
+      if(!res.ok){
+        const text = await res.text();
+        throw new Error(`Network error: ${res.status} - ${text}`);
+      }
+
+      try { data = await res.json(); } catch { data = {}; }
+
+      sessionData.maleAnswers = answers;
       sessionData.submittedMale = true;
-      alert('Test completed! PDF download available.');
+
+      alert('Test completed! You can now download the results.');
       showDownloadButton();
+      showMessage('Both users can now download the results.');
+      formPage.classList.add('hidden');
     }
   } catch(err) {
     alert("Submission failed: " + err.message);
@@ -198,18 +239,33 @@ function sessionCompleted() {
 
 async function loadSession(sessionCode) {
   const res = await fetch(`/api/session/${sessionCode}`);
+  if(!res.ok){
+    alert('Failed to load session');
+    location.href = '/';
+    return;
+  }
   const data = await res.json();
   if(!data.femaleAnswers){
     alert('Female has not completed the test yet.');
     location.href = '/';
+    return;
   }
   sessionData = data;
 }
 
 function startFormForMale() {
+  role = 'male';
   roleSelectPage.classList.add('hidden');
   formPage.classList.remove('hidden');
   formTitle.innerText = 'Answer Questions (Male)';
+  populateForm();
+}
+
+function startFormForFemale() {
+  role = 'female';
+  roleSelectPage.classList.add('hidden');
+  formPage.classList.remove('hidden');
+  formTitle.innerText = 'Answer Questions (Female)';
   populateForm();
 }
 
@@ -219,7 +275,7 @@ function showDownloadButton() {
 
 async function downloadPDF() {
   if(!sessionCompleted()){
-    alert('PDF is not available until both male and female complete the test.');
+    alert('Both male and female must submit answers first.');
     return;
   }
 
@@ -237,11 +293,9 @@ async function downloadPDF() {
     y += 10;
   });
 
-  if(window.QUESTIONS.sectionB) {
-    doc.text('Section B — Male Only', 10, y); y += 10;
-    const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
-    doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
-  }
+  doc.text('Section B — Male Only', 10, y); y += 10;
+  const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
+  doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
 
   doc.save('MarriageTestResult.pdf');
 }
