@@ -9,9 +9,18 @@ const submitBtn = document.getElementById('submitBtn');
 const downloadBtn = document.getElementById('downloadPDF');
 const startOverBtn = document.getElementById('startOver');
 
+// Set initial background for guidelines page
+document.getElementById('guidelines').style.background = "url('./images/img1.jpg') no-repeat center center";
+document.getElementById('guidelines').style.backgroundSize = "cover";
+
 startBtn.addEventListener('click', () => {
   document.getElementById('guidelines').classList.add('hidden');
-  document.getElementById('roleSelect').classList.remove('hidden');
+  const roleSelectPage = document.getElementById('roleSelect');
+  roleSelectPage.classList.remove('hidden');
+
+  // Set background for role selection page
+  roleSelectPage.style.background = "url('./images/img2.jpg') no-repeat center center";
+  roleSelectPage.style.backgroundSize = "cover";
 });
 
 femaleBtn.addEventListener('click', () => startTest('female'));

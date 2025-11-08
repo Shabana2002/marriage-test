@@ -140,3 +140,10 @@ body, html {
 
 #formPage button:hover {
   background-color: #2
+
+
+.page {
+  transition: background 0.8s ease-in-out;
+}
+
+    This
