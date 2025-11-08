@@ -135,34 +135,37 @@ function populateQuestions() {
 // ---- Handle Submission ---- //
 async function handleSubmit() {
   const answers = collectAnswers();
+
   try {
     if (role === 'female' && !code) {
+      // Send female answers to server
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ femaleAnswers: answers }),
       });
 
-      // Safe JSON parsing
+      // Try to parse JSON first, fallback to text if needed
       let data;
       try {
+        data = await res.json();
+      } catch {
         const text = await res.text();
-        data = text ? JSON.parse(text) : {};
-      } catch (err) {
-        console.error('Invalid JSON response from server:', err);
-        data = {};
+        data = { code: text.trim() };
       }
 
-      if (!data.code) {
-        return alert('Submission failed: no session code returned from server.');
-      }
+      // Ensure we have a session code
+      if (!data.code) return alert('Submission failed: no session code returned from server.');
 
+      // Save session data
       code = data.code;
-      sessionData = data;
+      sessionData = { femaleAnswers: answers, code };
 
+      // Disable submit button
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
 
+      // Create or update share link
       let linkDiv = document.getElementById('shareLinkDiv');
       if (!linkDiv) {
         linkDiv = document.createElement('div');
@@ -170,12 +173,15 @@ async function handleSubmit() {
         linkDiv.style.marginTop = '10px';
         submitBtn.parentNode.appendChild(linkDiv);
       }
+
       const shareURL = `${window.location.origin}/?code=${code}`;
       linkDiv.innerHTML = `
         <p>Female test submitted! Share this link with your partner:</p>
         <input type="text" value="${shareURL}" readonly style="width: 100%;"/>
         <button id="copyLinkBtn">Copy Link</button>
       `;
+
+      // Copy link functionality
       document.getElementById('copyLinkBtn').addEventListener('click', () => {
         const input = linkDiv.querySelector('input');
         input.select();
@@ -185,30 +191,32 @@ async function handleSubmit() {
       });
 
     } else if (role === 'male') {
-      if (!code) return alert('No session code found. Female must submit first.');
+      if (!code) return alert('No session code found. Please ask the female to submit first.');
 
+      // Send male answers to server
       const res = await fetch(`/api/session/${code}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maleAnswers: answers }),
       });
 
-      // Safe JSON parsing
+      // Try to parse JSON, fallback to text
       let data;
       try {
+        data = await res.json();
+      } catch {
         const text = await res.text();
-        data = text ? JSON.parse(text) : {};
-      } catch (err) {
-        console.error('Invalid JSON response from server:', err);
-        data = {};
+        data = { maleAnswers: answers }; // fallback minimal data
       }
 
-      sessionData = data;
+      sessionData = { ...sessionData, ...data };
+
       alert('Male test submitted! Now you can download the PDF.');
       showDownloadButton();
     }
   } catch (err) {
     alert('Submission failed: ' + err.message);
+    console.error(err);
   }
 }
 
