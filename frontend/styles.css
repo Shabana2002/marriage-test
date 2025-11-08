@@ -1,107 +1,80 @@
-/* Reset */
-body, html {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  color: #333;
+body,html{
+  margin:0;
+  padding:0;
+  font-family:Arial,sans-serif;
+  background:#f5f5f5;
+  color:#333;
 }
-
-.hidden { display: none; }
-
-.guidelines-list {
-  list-style-type: disc;
-  color: black;
-  text-align: left;
-  padding-left: 40px;
+.hidden{display:none}
+.guidelines-list{
+  list-style:disc;
+  color:black;
+  text-align:left;
+  padding-left:40px;
 }
-
-/* Guidelines Page */
-#guidelines {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: url('./images/img1.jpg') no-repeat center center;
-  background-size: cover;
-  text-align: center;
-  color: black;
-  padding: 40px;
+#guidelines{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:url('./images/img1.jpg') center/cover no-repeat;
+  text-align:center;
+  color:black;
+  padding:40px;
 }
-
-#guidelines button {
-  padding: 12px 30px;
-  font-size: 1.2em;
-  cursor: pointer;
-  border: none;
-  background-color: #ff6b81;
-  color: white;
-  border-radius: 6px;
-  transition: background 0.3s;
+#guidelines button{
+  padding:12px 30px;
+  font-size:1.2em;
+  border:none;
+  background:#ff6b81;
+  color:#fff;
+  border-radius:6px;
+  cursor:pointer;
 }
-#guidelines button:hover { background-color: #ff3b5c; }
-
-/* Role Select */
-#roleSelect {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: url('./images/img2.jpg') no-repeat center center;
-  background-size: cover;
-  text-align: center;
-  color: #fff;
-  padding: 40px;
+#roleSelect{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  background:url('./images/img2.jpg') center/cover no-repeat;
+  text-align:center;
+  color:#fff;
 }
-
-#roleSelect button {
-  padding: 10px 25px;
-  font-size: 1.1em;
-  margin: 10px;
-  border: none;
-  background-color: #1e90ff;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.3s;
+#roleSelect button{
+  padding:10px 25px;
+  margin:10px;
+  border:none;
+  background:#1e90ff;
+  color:#fff;
+  border-radius:6px;
+  cursor:pointer;
 }
-#roleSelect button:hover { background-color: #0066cc; }
-
-/* Form Page */
-#formPage {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+#formPage{
+  max-width:800px;
+  margin:40px auto;
+  padding:20px;
+  background:#fff;
+  border-radius:8px;
+  box-shadow:0 0 15px rgba(0,0,0,.2);
 }
-#formPage .question { margin-bottom: 20px; }
-#formPage .question p { font-weight: bold; margin-bottom: 8px; }
-#formPage label { display: block; margin-bottom: 5px; cursor: pointer; }
-
-#formPage input[type="radio"],
-#formPage input[type="checkbox"] { margin-right: 10px; }
-
-.actions {
-  text-align: center;
-  margin-top: 20px;
+#formPage .question{margin-bottom:20px}
+#formPage .question p{font-weight:bold;margin-bottom:8px}
+#formPage label{display:block;margin-bottom:5px}
+#formPage select{margin:4px 0;padding:4px;width:100%}
+.actions{text-align:center;margin-top:20px}
+.actions button{
+  padding:10px 25px;
+  margin:5px;
+  border:none;
+  border-radius:6px;
+  font-size:1em;
+  cursor:pointer;
 }
-
-.actions button {
-  padding: 10px 25px;
-  margin: 5px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1em;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-.actions #submitBtn { background-color: #28a745; color: #fff; }
-.actions #submitBtn:hover { background-color: #218838; }
-.actions #downloadLocal, #downloadPDF { background-color: #007bff; color: #fff; }
-.actions #downloadLocal:hover, #downloadPDF:hover { background-color: #0069d9; }
-.actions #startOver { background-color: #dc3545; color: #fff; }
-.actions #startOver:hover { background-color: #c82333; }
+#submitBtn{background:#28a745;color:#fff}
+#submitBtn:hover{background:#218838}
+#downloadLocal,#downloadPDF{background:#007bff;color:#fff}
+#downloadLocal:hover,#downloadPDF:hover{background:#0069d9}
+#startOver{background:#dc3545;color:#fff}
+#startOver:hover{background:#c82333}
