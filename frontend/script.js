@@ -91,7 +91,8 @@ function populateForm() {
       // Use checkbox for multiple answers (q6, q9) otherwise radio
       const type = (q.id==='q6'||q.id==='q9') ? 'checkbox' : 'radio';
       q.options.forEach(opt => {
-        div.innerHTML += `<label><input type="${type}" name="${q.id}" value="${opt}"> ${opt}</label><br>`;
+        const inputId = `${q.id}_${opt}`;
+        div.innerHTML += `<label for="${inputId}"><input id="${inputId}" type="${type}" name="${q.id}" value="${opt}"> ${opt}</label><br>`;
       });
     } else if (q.mapping) {
       // Match-the-following: render as dropdowns
@@ -115,13 +116,10 @@ function populateForm() {
     testForm.appendChild(div);
   });
 
-  // Submit & download buttons
+  // Only add download answers button, submit comes from HTML
   const actionsDiv = document.createElement('div');
   actionsDiv.classList.add('actions');
-  actionsDiv.innerHTML = `
-    <button type="submit">Submit</button>
-    <button type="button" id="downloadLocal">Download Answers (JSON)</button>
-  `;
+  actionsDiv.innerHTML = `<button type="button" id="downloadLocal">Download Answers (JSON)</button>`;
   testForm.appendChild(actionsDiv);
 
   document.getElementById('downloadLocal').addEventListener('click', () => {
@@ -136,14 +134,20 @@ function populateForm() {
 
 // Collect answers
 function collectAnswers() {
-  const formData = new FormData(testForm);
   const answers = {};
-  for (const [key, value] of formData.entries()) {
-    if (answers[key]) {
-      if (Array.isArray(answers[key])) answers[key].push(value);
-      else answers[key] = [answers[key], value];
-    } else answers[key] = value;
-  }
+  const elements = testForm.querySelectorAll('input, select');
+
+  elements.forEach(el => {
+    if(el.type === 'checkbox') {
+      if(!answers[el.name]) answers[el.name] = [];
+      if(el.checked) answers[el.name].push(el.value);
+    } else if(el.type === 'radio') {
+      if(el.checked) answers[el.name] = el.value;
+    } else if(el.tagName.toLowerCase() === 'select') {
+      answers[el.name] = el.value;
+    }
+  });
+
   return answers;
 }
 
@@ -152,34 +156,40 @@ async function handleSubmit(e) {
   e.preventDefault();
   const answers = collectAnswers();
 
-  if(role==='female' && !code) {
-    const res = await fetch('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ femaleAnswers: answers })
-    });
-    const data = await res.json();
-    code = data.code;
-    sessionData = data;
-    sessionData.submittedFemale = true;
-    alert(`Share this link with male: ${window.location.origin}/?code=${code}`);
-    showMessage('Waiting for male to complete the test...');
-    formPage.classList.add('hidden');
-  } else if(role==='male') {
-    if(sessionData.submittedMale){
-      alert('This link has already been used.');
-      return;
+  try {
+    if(role==='female' && !code) {
+      const res = await fetch('/api/session', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ femaleAnswers: answers })
+      });
+      if(!res.ok) throw new Error("Network error");
+      const data = await res.json();
+      code = data.code;
+      sessionData = data;
+      sessionData.submittedFemale = true;
+      alert(`Share this link with male: ${window.location.origin}/?code=${code}`);
+      showMessage('Waiting for male to complete the test...');
+      formPage.classList.add('hidden');
+    } else if(role==='male') {
+      if(sessionData.submittedMale){
+        alert('This link has already been used.');
+        return;
+      }
+      const res = await fetch(`/api/session/${code}/complete`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ maleAnswers: answers })
+      });
+      if(!res.ok) throw new Error("Network error");
+      const data = await res.json();
+      sessionData = data;
+      sessionData.submittedMale = true;
+      alert('Test completed! PDF download available.');
+      showDownloadButton();
     }
-    const res = await fetch(`/api/session/${code}/complete`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ maleAnswers: answers })
-    });
-    const data = await res.json();
-    sessionData = data;
-    sessionData.submittedMale = true;
-    alert('Test completed! PDF download available.');
-    showDownloadButton();
+  } catch(err) {
+    alert("Submission failed: " + err.message);
   }
 }
 
