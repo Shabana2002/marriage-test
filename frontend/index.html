@@ -1,42 +1,67 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marriage Compatibility Test</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="utils/scoring.js"></script>
-  <script src="utils/results.js"></script>
-  <script src="data/question.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Marriage Match Test</title>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<main class="card">
+  <header><h1>💍 Marriage Match Test</h1></header>
 
-<div id="guidelines" class="page">
-  <h1>Welcome to the Marriage Compatibility Test</h1>
-  <p>Please read the instructions carefully.</p>
-  <button id="startBtn">Start</button>
-</div>
+  <section id="guidelines" class="page">
+    <h2>Guidelines — Please read before you begin</h2>
+    <ul>
+      <li>You must complete the test in <strong>one sitting</strong>.</li>
+      <li>No switching tabs, refreshing, or closing the window during the test.</li>
+      <li>If you leave the test midway, the session becomes <strong>disqualified</strong> and the same link cannot be reused.</li>
+      <li>Once both partners complete the test, you will be able to see your <strong>combined results</strong>.</li>
+      <li>All data is private and automatically deleted after <strong>30 days</strong>.</li>
+    </ul>
+    <p><strong>By clicking “Take Test” you agree to complete the section without interruption.</strong></p>
+    <div class="actions"><button id="takeTest">Take Test</button></div>
+  </section>
 
-<div id="roleSelect" class="page hidden">
-  <h2>Select Your Role</h2>
-  <button id="femaleBtn">Female</button>
-  <button id="maleBtn">Male</button>
-</div>
+  <section id="roleSelect" class="page hidden">
+    <h2>Select your role</h2>
+    <div class="actions">
+      <button id="femaleBtn">Female 💖</button>
+      <button id="maleBtn">Male 💙</button>
+    </div>
+    <p id="roleNote" class="note"></p>
+  </section>
 
-<div id="formPage" class="page hidden">
-  <h2 id="formTitle">Answer the Questions</h2>
-  <form id="questionForm"></form>
-  <button id="submitBtn">Submit</button>
-</div>
+  <section id="formPage" class="page hidden">
+    <h2 id="formTitle">Section A — Compatibility</h2>
+    <form id="testForm">
+      <div id="questions"></div>
+      <div id="sectionB" class="hidden"></div>
+      <div class="actions">
+        <button type="submit" id="submitBtn">Submit</button>
+        <button type="button" id="downloadLocal">Download Answers (JSON)</button>
+      </div>
+    </form>
+  </section>
 
-<div id="resultPage" class="page hidden">
-  <h2>Results</h2>
-  <div id="resultContent"></div>
-  <button id="downloadPDF">Download PDF</button>
-  <button id="startOver">Start Over</button>
-</div>
+  <section id="resultPage" class="page hidden">
+    <h2>Results</h2>
+    <div id="resultContent"></div>
+    <div class="actions">
+      <button id="downloadPDF">Download Result (PDF)</button>
+      <button id="startOver">Start Over</button>
+    </div>
+  </section>
 
-<script src="script.js" defer></script>
+  <footer><small>© Marriage Match Test — Data deleted after 30 days.</small></footer>
+</main>
+
+<!-- jsPDF for client-side PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="data/questions.js"></script>
+<script src="utils/scoring.js"></script>
+<script src="utils/results.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
