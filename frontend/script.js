@@ -21,7 +21,7 @@ console.log("✅ script.js loaded");
 // ---- Check session if code exists ---- //
 if (code) {
   loadSession(code).then(() => {
-    if (sessionData.submittedMale) {
+    if (sessionData.femaleAnswers && sessionData.maleAnswers) {
       showDownloadButton();
       alert('Both have completed. You can download the PDF.');
     } else {
@@ -126,7 +126,7 @@ function populateQuestions() {
 
   document.getElementById('submitBtn').addEventListener('click', handleSubmit);
   document.getElementById('downloadLocal').addEventListener('click', () => {
-    if (!sessionData.submittedFemale || !sessionData.submittedMale)
+    if (!sessionData.femaleAnswers || !sessionData.maleAnswers)
       return alert('Both must submit before download.');
     downloadPDF();
   });
@@ -138,34 +138,22 @@ async function handleSubmit() {
 
   try {
     if (role === 'female' && !code) {
-      // Send female answers to server
       const res = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ femaleAnswers: answers }),
       });
 
-      // Try to parse JSON first, fallback to text if needed
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text();
-        data = { code: text.trim() };
-      }
+      const data = await res.json();
 
-      // Ensure we have a session code
       if (!data.code) return alert('Submission failed: no session code returned from server.');
 
-      // Save session data
       code = data.code;
-      sessionData = { femaleAnswers: answers, code };
+      sessionData = { ...data, femaleAnswers: answers };
 
-      // Disable submit button
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
 
-      // Create or update share link
       let linkDiv = document.getElementById('shareLinkDiv');
       if (!linkDiv) {
         linkDiv = document.createElement('div');
@@ -181,7 +169,6 @@ async function handleSubmit() {
         <button id="copyLinkBtn">Copy Link</button>
       `;
 
-      // Copy link functionality
       document.getElementById('copyLinkBtn').addEventListener('click', () => {
         const input = linkDiv.querySelector('input');
         input.select();
@@ -193,23 +180,14 @@ async function handleSubmit() {
     } else if (role === 'male') {
       if (!code) return alert('No session code found. Please ask the female to submit first.');
 
-      // Send male answers to server
       const res = await fetch(`/api/session/${code}/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maleAnswers: answers }),
       });
 
-      // Try to parse JSON, fallback to text
-      let data;
-      try {
-        data = await res.json();
-      } catch {
-        const text = await res.text();
-        data = { maleAnswers: answers }; // fallback minimal data
-      }
-
-      sessionData = { ...sessionData, ...data };
+      const data = await res.json();
+      sessionData = { ...sessionData, ...data, maleAnswers: answers };
 
       alert('Male test submitted! Now you can download the PDF.');
       showDownloadButton();
@@ -220,12 +198,11 @@ async function handleSubmit() {
   }
 }
 
-
 // ---- Collect Answers ---- //
 function collectAnswers() {
   const out = {};
   testForm.querySelectorAll('input, select').forEach(el => {
-    const name = el.name.replace(/\[\]$/, ''); // remove [] for checkbox arrays
+    const name = el.name.replace(/\[\]$/, '');
     if (el.type === 'radio' && el.checked) out[name] = el.value;
     else if (el.type === 'checkbox') {
       if (!out[name]) out[name] = [];

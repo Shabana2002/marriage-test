@@ -37,7 +37,7 @@ app.post('/api/session', (req, res) => {
     maleAnswers: null
   };
   writeS(sessions);
-  res.json({ code });
+  res.json({ code, ...sessions[code] }); // return full session object
 });
 
 // Get session (male)
@@ -58,7 +58,9 @@ app.post('/api/session/:code/complete', (req, res) => {
   sessions[code].maleAnswers = maleAnswers;
   sessions[code].completedAt = Date.now();
   writeS(sessions);
-  res.json({ success: true });
+
+  // Return full updated session object
+  res.json(sessions[code]);
 });
 
 app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
