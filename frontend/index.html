@@ -10,6 +10,7 @@
 <main class="card">
   <header><h1>💍 Marriage Match Test</h1></header>
 
+  <!-- Guidelines Page -->
   <section id="guidelines" class="page">
     <h2>Please read before you begin</h2>
     <ul class="guidelines-list">
@@ -20,9 +21,12 @@
       <li>All data is private and automatically deleted after <strong>30 days</strong>.</li>
     </ul>
     <p><strong>By clicking “Take Test” you agree to complete the section without interruption.</strong></p>
-    <div class="actions"><button id="takeTest">Take Test</button></div>
+    <div class="actions">
+      <button id="takeTest">Take Test</button>
+    </div>
   </section>
 
+  <!-- Role Selection -->
   <section id="roleSelect" class="page hidden">
     <h2>Select your role</h2>
     <div class="actions">
@@ -32,11 +36,21 @@
     <p id="roleNote" class="note"></p>
   </section>
 
+  <!-- Test Form -->
   <section id="formPage" class="page hidden">
     <h2 id="formTitle">Section A — Compatibility</h2>
     <form id="testForm">
-      <div id="questions"></div>
-      <div id="sectionB" class="hidden"></div>
+      <div id="questions">
+        <!-- Section A questions will be dynamically injected here -->
+      </div>
+
+      <!-- Section B (only for males) -->
+      <div id="sectionB" class="hidden">
+        <h3>Section B — Additional Questions</h3>
+        <!-- Section B questions injected dynamically if male -->
+      </div>
+
+      <!-- Submit and Download buttons -->
       <div class="actions">
         <button type="submit" id="submitBtn">Submit</button>
         <button type="button" id="downloadLocal">Download Answers (JSON)</button>
@@ -44,6 +58,7 @@
     </form>
   </section>
 
+  <!-- Result Page -->
   <section id="resultPage" class="page hidden">
     <h2>Results</h2>
     <div id="resultContent"></div>
@@ -65,7 +80,3 @@
 <script src="script.js"></script>
 </body>
 </html>
-
-<div class="actions">
-  <button type="submit" id="submitBtn">Submit</button>
-</div>
