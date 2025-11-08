@@ -1,4 +1,4 @@
-/* Reset some default styles */
+/* Reset */
 body, html {
   margin: 0;
   padding: 0;
@@ -7,10 +7,7 @@ body, html {
   color: #333;
 }
 
-/* Hide sections by default */
-.hidden {
-  display: none;
-}
+.hidden { display: none; }
 
 .guidelines-list {
   list-style-type: disc;
@@ -18,7 +15,6 @@ body, html {
   text-align: left;
   padding-left: 40px;
 }
-
 
 /* Guidelines Page */
 #guidelines {
@@ -34,18 +30,6 @@ body, html {
   padding: 40px;
 }
 
-#guidelines h1 {
-  font-size: 3em;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 5px #000;
-}
-
-#guidelines p {
-  font-size: 1.2em;
-  margin-bottom: 30px;
-  text-shadow: 1px 1px 3px #000;
-}
-
 #guidelines button {
   padding: 12px 30px;
   font-size: 1.2em;
@@ -56,12 +40,9 @@ body, html {
   border-radius: 6px;
   transition: background 0.3s;
 }
+#guidelines button:hover { background-color: #ff3b5c; }
 
-#guidelines button:hover {
-  background-color: #ff3b5c;
-}
-
-/* Role Selection Page */
+/* Role Select */
 #roleSelect {
   height: 100vh;
   display: flex;
@@ -75,12 +56,6 @@ body, html {
   padding: 40px;
 }
 
-#roleSelect h2 {
-  font-size: 2.5em;
-  margin-bottom: 20px;
-  text-shadow: 2px 2px 5px #000;
-}
-
 #roleSelect button {
   padding: 10px 25px;
   font-size: 1.1em;
@@ -92,18 +67,7 @@ body, html {
   cursor: pointer;
   transition: background 0.3s;
 }
-
-#roleSelect button:hover {
-  background-color: #0066cc;
-}
-
-#roleSelect input {
-  margin-top: 20px;
-  padding: 8px;
-  font-size: 1em;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
+#roleSelect button:hover { background-color: #0066cc; }
 
 /* Form Page */
 #formPage {
@@ -114,43 +78,30 @@ body, html {
   border-radius: 8px;
   box-shadow: 0 0 15px rgba(0,0,0,0.2);
 }
-
-#formPage .question {
-  margin-bottom: 20px;
-}
-
-#formPage .question p {
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-#formPage label {
-  display: block;
-  margin-bottom: 5px;
-  cursor: pointer;
-}
+#formPage .question { margin-bottom: 20px; }
+#formPage .question p { font-weight: bold; margin-bottom: 8px; }
+#formPage label { display: block; margin-bottom: 5px; cursor: pointer; }
 
 #formPage input[type="radio"],
-#formPage input[type="checkbox"] {
-  margin-right: 10px;
+#formPage input[type="checkbox"] { margin-right: 10px; }
+
+.actions {
+  text-align: center;
+  margin-top: 20px;
 }
 
-#formPage button {
-  padding: 10px 20px;
-  font-size: 1em;
+.actions button {
+  padding: 10px 25px;
+  margin: 5px;
   border: none;
-  background-color: #28a745;
-  color: white;
-  border-radius: 5px;
+  border-radius: 6px;
+  font-size: 1em;
   cursor: pointer;
-  margin-top: 15px;
+  transition: background 0.3s;
 }
-
-#formPage button:hover {
-  background-color: #218838;
-}
-
-.page {
-  transition: background 0.8s ease-in-out;
-}
-
+.actions #submitBtn { background-color: #28a745; color: #fff; }
+.actions #submitBtn:hover { background-color: #218838; }
+.actions #downloadLocal, #downloadPDF { background-color: #007bff; color: #fff; }
+.actions #downloadLocal:hover, #downloadPDF:hover { background-color: #0069d9; }
+.actions #startOver { background-color: #dc3545; color: #fff; }
+.actions #startOver:hover { background-color: #c82333; }
