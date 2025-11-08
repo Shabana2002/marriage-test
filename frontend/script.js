@@ -26,14 +26,12 @@ code = urlParams.get('code');
 if (code) {
   loadSession(code).then(() => {
     if (sessionData.submittedMale && sessionData.submittedFemale) {
+      role = 'female';
       showDownloadButton();
-      showMessage('Both have completed the test. You can download the results.');
-    } else if (sessionData.submittedFemale) {
+      showMessage('Both male and female have completed the test. You can download the results.');
+    } else {
       role = 'male';
       startFormForMale();
-      showMessage('Female has submitted. Male can now complete the test.');
-    } else {
-      guidelinesPage.classList.remove('hidden');
     }
   });
 } else {
@@ -51,9 +49,7 @@ startBtn.addEventListener('click', () => {
 femaleBtn.addEventListener('click', () => startTest('female'));
 maleBtn.addEventListener('click', () => startTest('male'));
 
-// Form submit
 testForm.addEventListener('submit', handleSubmit);
-
 downloadBtn.addEventListener('click', downloadPDF);
 startOverBtn.addEventListener('click', () => location.reload());
 
@@ -82,7 +78,11 @@ function startTest(selectedRole) {
 // Populate form questions
 function populateForm() {
   testForm.innerHTML = '';
-  let questions = role === 'female' ? window.QUESTIONS.sectionA : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
+
+  // Female: Section A; Male: Section A + Section B
+  let questions = role === 'female'
+      ? window.QUESTIONS.sectionA
+      : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
 
   questions.forEach(q => {
     const div = document.createElement('div');
@@ -116,7 +116,7 @@ function populateForm() {
     testForm.appendChild(div);
   });
 
-  // Add submit and download buttons
+  // Submit + Download buttons
   const actionsDiv = document.createElement('div');
   actionsDiv.classList.add('actions');
   actionsDiv.innerHTML = `
@@ -193,10 +193,7 @@ async function handleSubmit(e) {
 // Session helpers
 // ========================
 function sessionCompleted() {
-  if (!role) return false;
-  if (role === 'female') return sessionData.submittedFemale && sessionData.submittedMale;
-  if (role === 'male') return sessionData.submittedMale && sessionData.submittedFemale;
-  return false;
+  return sessionData.submittedFemale && sessionData.submittedMale;
 }
 
 async function loadSession(sessionCode) {
@@ -220,12 +217,12 @@ function showDownloadButton() {
   downloadBtn.classList.remove('hidden');
 }
 
-// Download PDF only if both submitted
 async function downloadPDF() {
-  if(!sessionData.submittedFemale || !sessionData.submittedMale){
-    alert('PDF is available only after both female and male have submitted their answers.');
+  if(!sessionCompleted()){
+    alert('PDF is not available until both male and female complete the test.');
     return;
   }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   let y = 10;
@@ -240,9 +237,11 @@ async function downloadPDF() {
     y += 10;
   });
 
-  doc.text('Section B — Male Only', 10, y); y += 10;
-  const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
-  doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
+  if(window.QUESTIONS.sectionB) {
+    doc.text('Section B — Male Only', 10, y); y += 10;
+    const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
+    doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
+  }
 
   doc.save('MarriageTestResult.pdf');
 }
