@@ -86,16 +86,32 @@ function populateForm() {
     const div = document.createElement('div');
     div.classList.add('question');
     div.innerHTML = `<p>${q.text}</p>`;
+
     if (q.options) {
+      // Use checkbox for multiple answers (q6, q9) otherwise radio
       const type = (q.id==='q6'||q.id==='q9') ? 'checkbox' : 'radio';
       q.options.forEach(opt => {
         div.innerHTML += `<label><input type="${type}" name="${q.id}" value="${opt}"> ${opt}</label><br>`;
       });
     } else if (q.mapping) {
+      // Match-the-following: render as dropdowns
       Object.keys(q.mapping).forEach(k => {
-        div.innerHTML += `<label>${k}: <input type="text" name="${q.id}_${k}"></label><br>`;
+        const label = document.createElement('label');
+        label.innerText = k + ': ';
+        const select = document.createElement('select');
+        select.name = `${q.id}_${k}`;
+        q.mapping[k].forEach(opt => {
+          const optionEl = document.createElement('option');
+          optionEl.value = opt;
+          optionEl.innerText = opt;
+          select.appendChild(optionEl);
+        });
+        label.appendChild(select);
+        div.appendChild(label);
+        div.appendChild(document.createElement('br'));
       });
     }
+
     testForm.appendChild(div);
   });
 
