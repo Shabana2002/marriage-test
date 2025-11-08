@@ -9,7 +9,6 @@ let sessionData = {};   // stores answers & submission status
 const startBtn = document.getElementById('takeTest');
 const femaleBtn = document.getElementById('femaleBtn');
 const maleBtn = document.getElementById('maleBtn');
-const submitBtn = document.getElementById('submitBtn');
 const downloadBtn = document.getElementById('downloadPDF');
 const startOverBtn = document.getElementById('startOver');
 const formPage = document.getElementById('formPage');
@@ -21,15 +20,13 @@ const testForm = document.getElementById('testForm');
 // ========================
 // INIT
 // ========================
-
 const urlParams = new URLSearchParams(window.location.search);
-code = urlParams.get('code'); // check if accessed via shared link
+code = urlParams.get('code');
 
 if (code) {
-  // Link access - must be male or female returner
   loadSession(code).then(() => {
     if (sessionData.submittedMale) {
-      role = 'female'; // female can now download PDF
+      role = 'female';
       showDownloadButton();
       showMessage('Male has completed the test. You can download the results.');
     } else {
@@ -38,36 +35,26 @@ if (code) {
     }
   });
 } else {
-  // Normal flow: female selects gender
   guidelinesPage.classList.remove('hidden');
 }
 
 // ========================
 // EVENT LISTENERS
 // ========================
-
-// Start button
 startBtn.addEventListener('click', () => {
   guidelinesPage.classList.add('hidden');
   roleSelectPage.classList.remove('hidden');
 });
 
-// Female selection
 femaleBtn.addEventListener('click', () => startTest('female'));
-
-// Male selection (only normal male, not link male)
 maleBtn.addEventListener('click', () => startTest('male'));
 
-// Submit button
-submitBtn.addEventListener('click', e => testForm.dispatchEvent(new Event('submit')));
+// Submit handled by form submit event
+testForm.addEventListener('submit', handleSubmit);
 
-// Download button
 downloadBtn.addEventListener('click', downloadPDF);
-
-// Start over
 startOverBtn.addEventListener('click', () => location.reload());
 
-// Warn user if they try to leave mid-test
 window.addEventListener('beforeunload', function(e) {
   if (!sessionCompleted()) {
     e.preventDefault();
@@ -78,14 +65,6 @@ window.addEventListener('beforeunload', function(e) {
 // ========================
 // FUNCTIONS
 // ========================
-
-// Check if session is completed
-function sessionCompleted() {
-  if (!role) return false;
-  if (role === 'female') return sessionData.submittedFemale && sessionData.submittedMale;
-  if (role === 'male') return sessionData.submittedMale;
-  return false;
-}
 
 // Start test
 function startTest(selectedRole) {
@@ -101,9 +80,7 @@ function startTest(selectedRole) {
 // Populate form questions
 function populateForm() {
   testForm.innerHTML = '';
-  let questions = [];
-  if(role==='female') questions = window.QUESTIONS.sectionA;
-  else if(role==='male') questions = window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
+  let questions = role === 'female' ? window.QUESTIONS.sectionA : window.QUESTIONS.sectionA.concat(window.QUESTIONS.sectionB);
 
   questions.forEach(q => {
     const div = document.createElement('div');
@@ -121,15 +98,45 @@ function populateForm() {
     }
     testForm.appendChild(div);
   });
+
+  // Submit & download buttons
+  const actionsDiv = document.createElement('div');
+  actionsDiv.classList.add('actions');
+  actionsDiv.innerHTML = `
+    <button type="submit">Submit</button>
+    <button type="button" id="downloadLocal">Download Answers (JSON)</button>
+  `;
+  testForm.appendChild(actionsDiv);
+
+  document.getElementById('downloadLocal').addEventListener('click', () => {
+    const answers = collectAnswers();
+    const blob = new Blob([JSON.stringify(answers, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'answers.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+// Collect answers
+function collectAnswers() {
+  const formData = new FormData(testForm);
+  const answers = {};
+  for (const [key, value] of formData.entries()) {
+    if (answers[key]) {
+      if (Array.isArray(answers[key])) answers[key].push(value);
+      else answers[key] = [answers[key], value];
+    } else answers[key] = value;
+  }
+  return answers;
 }
 
 // Handle form submission
-testForm.addEventListener('submit', async function(e) {
+async function handleSubmit(e) {
   e.preventDefault();
   const answers = collectAnswers();
 
   if(role==='female' && !code) {
-    // Female first submission
     const res = await fetch('/api/session', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
@@ -143,7 +150,6 @@ testForm.addEventListener('submit', async function(e) {
     showMessage('Waiting for male to complete the test...');
     formPage.classList.add('hidden');
   } else if(role==='male') {
-    // Male submission
     if(sessionData.submittedMale){
       alert('This link has already been used.');
       return;
@@ -159,41 +165,28 @@ testForm.addEventListener('submit', async function(e) {
     alert('Test completed! PDF download available.');
     showDownloadButton();
   }
-});
-
-// ========================
-// COLLECT FORM ANSWERS
-// ========================
-function collectAnswers() {
-  const formData = new FormData(testForm);
-  const answers = {};
-  for (const [key, value] of formData.entries()) {
-    if(answers[key]){
-      if(Array.isArray(answers[key])) answers[key].push(value);
-      else answers[key] = [answers[key], value];
-    } else {
-      answers[key] = value;
-    }
-  }
-  return answers;
 }
 
 // ========================
-// LOAD SESSION
+// Session helpers
 // ========================
+function sessionCompleted() {
+  if (!role) return false;
+  if (role === 'female') return sessionData.submittedFemale && sessionData.submittedMale;
+  if (role === 'male') return sessionData.submittedMale;
+  return false;
+}
+
 async function loadSession(sessionCode) {
   const res = await fetch(`/api/session/${sessionCode}`);
   const data = await res.json();
-  if(!data.femaleAnswers) {
+  if(!data.femaleAnswers){
     alert('Female has not completed the test yet.');
     location.href = '/';
   }
   sessionData = data;
 }
 
-// ========================
-// SHOW FORM FOR LINKED MALE
-// ========================
 function startFormForMale() {
   roleSelectPage.classList.add('hidden');
   formPage.classList.remove('hidden');
@@ -201,14 +194,10 @@ function startFormForMale() {
   populateForm();
 }
 
-// ========================
-// DOWNLOAD PDF
-// ========================
 function showDownloadButton() {
   downloadBtn.classList.remove('hidden');
 }
 
-// ========================
 async function downloadPDF() {
   if(!sessionData.submittedMale){
     alert('PDF is not available until male completes the test.');
@@ -218,8 +207,7 @@ async function downloadPDF() {
   const doc = new jsPDF();
 
   let y = 10;
-  doc.text('Section A — Compatibility', 10, y);
-  y += 10;
+  doc.text('Section A — Compatibility', 10, y); y += 10;
   window.QUESTIONS.sectionA.forEach(q => {
     const fAns = Array.isArray(sessionData.femaleAnswers[q.id]) ? sessionData.femaleAnswers[q.id].join(', ') : sessionData.femaleAnswers[q.id];
     const mAns = Array.isArray(sessionData.maleAnswers[q.id]) ? sessionData.maleAnswers[q.id].join(', ') : sessionData.maleAnswers[q.id];
@@ -229,21 +217,22 @@ async function downloadPDF() {
     y += 10;
   });
 
-  // Section B — Male only
-  doc.text('Section B — Male Emotional Awareness', 10, y); y += 10;
+  doc.text('Section B — Male Only', 10, y); y += 10;
   const maleScore = window.SCORING.scoreSectionB(sessionData.maleAnswers);
   doc.text(`Male Score: ${maleScore.percent}%`, 10, y);
 
   doc.save('MarriageTestResult.pdf');
 }
 
-// ========================
-// UTILITIES
-// ========================
+// Show messages
 function showMessage(msg) {
-  const msgDiv = document.getElementById('message');
-  if(msgDiv){
-    msgDiv.innerText = msg;
-    msgDiv.classList.remove('hidden');
+  let msgDiv = document.getElementById('message');
+  if(!msgDiv){
+    msgDiv = document.createElement('div');
+    msgDiv.id = 'message';
+    msgDiv.classList.add('note');
+    formPage.prepend(msgDiv);
   }
+  msgDiv.innerText = msg;
+  msgDiv.classList.remove('hidden');
 }
