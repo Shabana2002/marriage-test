@@ -117,15 +117,26 @@ function populateForm() {
     testForm.appendChild(div);
   });
 
-  // Add submit button dynamically
-  const submitBtn = document.createElement('button');
-  submitBtn.type = 'button';
-  submitBtn.id = 'submitBtn';
-  submitBtn.innerText = role === 'female' ? 'Submit Female Test' : 'Submit Male Test';
-  submitBtn.classList.add('btn-primary');
-  testForm.appendChild(submitBtn);
+  // Add submit & download buttons
+  const actionsDiv = document.createElement('div');
+  actionsDiv.classList.add('actions');
 
-  submitBtn.addEventListener('click', handleSubmit);
+  actionsDiv.innerHTML = `
+    <button type="button" id="submitBtn" class="btn-primary">Submit Test</button>
+    <button type="button" id="downloadLocal" class="btn-secondary">Download PDF</button>
+  `;
+  testForm.appendChild(actionsDiv);
+
+  document.getElementById('submitBtn').addEventListener('click', handleSubmit);
+
+  // Local download button works only if both have submitted
+  document.getElementById('downloadLocal').addEventListener('click', () => {
+    if(!sessionData.submittedFemale || !sessionData.submittedMale){
+      alert('Both male and female must submit their answers before downloading the PDF.');
+      return;
+    }
+    downloadPDF();
+  });
 }
 
 // Collect answers
@@ -199,10 +210,7 @@ async function handleSubmit() {
 // Session helpers
 // ========================
 function sessionCompleted() {
-  if (!role) return false;
-  if (role === 'female') return sessionData.submittedFemale && sessionData.submittedMale;
-  if (role === 'male') return sessionData.submittedMale;
-  return false;
+  return sessionData.submittedFemale && sessionData.submittedMale;
 }
 
 async function loadSession(sessionCode) {
@@ -226,8 +234,8 @@ function showDownloadButton() {
 }
 
 async function downloadPDF() {
-  if(!sessionData.submittedMale){
-    alert('PDF is not available until male completes the test.');
+  if(!sessionData.submittedMale || !sessionData.submittedFemale){
+    alert('PDF is not available until both have completed the test.');
     return;
   }
 
